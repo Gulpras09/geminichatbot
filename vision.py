@@ -41,35 +41,46 @@ def load_gemini_pro_vision_model():
 
 
 # Input fields
-input_txt = st.text_area("Ask a question:", key="input")
-input_img = st.file_uploader("Upload an image:", type=[
-                             "jpg", "jpeg", "png"], key="image")
+input_txt = st.text_area("Ask a question:", key="input",
+                         help="Type a clear and concise question about the image.")
 
-# Display uploaded image
+# File uploader with user feedback
+input_img = st.file_uploader("Upload an image:", type=[
+                             "jpg", "jpeg", "png"], key="image", help="Accepted formats: jpg, jpeg, png")
+
+# Initialize image variable in session to prevent re-uploads on reruns
+if "uploaded_image" not in st.session_state:
+    st.session_state.uploaded_image = None
+
+# Handle uploaded image
 if input_img is not None:
-    image = Image.open(input_img)
-    st.image(image, caption='Uploaded Image', use_container_width=True)
+    try:
+        image = Image.open(input_img)
+        st.session_state.uploaded_image = image  # Store once in session
+        st.image(image, caption='🖼️ Uploaded Image', use_container_width=True)
+    except Exception as img_error:
+        st.error(f"⚠️ Unable to open image: {img_error}")
+        st.session_state.uploaded_image = None
 
 # If ask button is clicked
 if st.button("Ask"):
     try:
-        # Validate inputs
+        # Validate user input
         if not input_txt.strip():
-            st.warning("Please enter a question.")
-        elif input_img is None:
-            st.warning("Please upload an image.")
+            st.warning("⚠️ Please enter a question.")
+        elif st.session_state.uploaded_image is None:
+            st.warning("⚠️ Please upload a valid image.")
         else:
             # Load the model
             model = load_gemini_pro_vision_model()
 
-            # Convert the uploaded file to a PIL Image
-            pil_image = Image.open(input_img)
+            # Generate response using stored image
+            response = model.generate_content(
+                [input_txt, st.session_state.uploaded_image])
 
-            # Generate response
-            response = model.generate_content([input_txt, pil_image])
-
-            # Display response
-            st.subheader("Response:")
+            # Display AI response
+            st.subheader("🤖 Gemini's Response:")
             st.write(response.text)
+
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        st.error(f"❌ An error occurred: {e}")
