@@ -1,6 +1,6 @@
 streamlit
 google-generativeai
-python-dovenv
+python-dotenv
 langchain
 PyPDF2
 chromadb
