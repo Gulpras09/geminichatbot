@@ -3,18 +3,39 @@ import streamlit as st
 import os
 import google.generativeai as genai
 
-# Load environment variables
-load_dotenv()  # Ensure you have a .env file with GOOGLE_API_KEY
+# Load environment variables from .env file
+load_dotenv()
 
-# Configure Gemini API
-api_key = os.getenv('GOOGLE_API_KEY')
+# Streamlit app configuration
+st.set_page_config(page_title="Q&A Demo", page_icon="🔮", layout="wide")
+st.header("Gemini LLM Application")
+
+# Try to get API key from environment
+api_key = os.getenv("GOOGLE_API_KEY")
+
+# If not found in .env, ask the user to input it
 if not api_key:
-    st.error("Missing API key! Please check your .env file.")
+    api_key = st.text_input(
+        "Enter your Google Generative AI API Key:", type="password")
+    if not api_key:
+        st.info("Please enter your API key to continue.", icon="🗝️")
+        st.stop()
+
+# Try configuring Gemini with the provided API key
+try:
+    genai.configure(api_key=api_key)
+
+    # Validate API key with a test prompt
+    test_model = genai.GenerativeModel("gemini-1.5-flash-001")
+    _ = test_model.generate_content("Hello!").text
+
+except Exception as e:
+    st.error("Invalid or unauthorized API key. Please double-check and try again.")
     st.stop()
 
-genai.configure(api_key=api_key)
+# Function to get response from Gemini model
 
-# Function to load Gemini Pro model and get response
+
 def get_gemini_response(question):
     try:
         model = genai.GenerativeModel("gemini-1.5-flash-001")
@@ -23,7 +44,7 @@ def get_gemini_response(question):
 
         full_response = ""
         for chunk in response:
-            if hasattr(chunk, "text") and chunk.text:  # Ensure valid text response
+            if hasattr(chunk, "text") and chunk.text:
                 full_response += chunk.text
             else:
                 st.warning("Received an empty response from the AI.")
@@ -35,21 +56,18 @@ def get_gemini_response(question):
         st.error(f"An error occurred: {str(e)}")
         return "Error processing the request."
 
-# Initialize the Streamlit app
-st.set_page_config(page_title="Q&A Demo", page_icon="🔮", layout="wide")
-st.header("Gemini LLM Application")
 
-# Initialize session state for chat history
+# Initialize chat history in session state
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
+# User input for question
 input_text = st.text_input("Enter your question:", key="input")
 submit = st.button("Ask the Question")
 
-if submit and input_text.strip():  # Avoid empty inputs
+if submit and input_text.strip():
     response = get_gemini_response(input_text)
 
-    # Ensure only valid tuples are added to chat history
     if isinstance(input_text, str) and isinstance(response, str):
         st.session_state["chat_history"].append(("You", input_text))
         st.session_state["chat_history"].append(("Bot", response))
@@ -60,7 +78,7 @@ if submit and input_text.strip():  # Avoid empty inputs
 st.subheader("Chat History:")
 for entry in st.session_state["chat_history"]:
     if isinstance(entry, tuple) and len(entry) == 2:
-        role, text = entry  # Unpack the tuple correctly
+        role, text = entry
         st.write(f"**{role}:** {text}")
     else:
         st.error("Unexpected data format in chat history.")
