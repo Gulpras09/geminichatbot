@@ -1,32 +1,49 @@
 import os
 from dotenv import load_dotenv
-# Load environment variables
-load_dotenv()  # Ensure you have a .env file with GOOGLE_API_KEY
-import google.generativeai as genai
-print(genai.__version__)
 import streamlit as st
-from PIL import Image  # Import PIL to handle image processing
+from PIL import Image
+import google.generativeai as genai
 
+# Load environment variables
+load_dotenv()  # Make sure .env contains GOOGLE_API_KEY
 
+# Streamlit UI for API Key input (optional if not using .env)
+st.set_page_config(page_title="Image Verification Demo",
+                   page_icon="🔮", layout="wide")
+st.header("Gemini Image Verification Application")
 
-# Configure Gemini API
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+# Get API key securely from .env or manual input
+api_key = os.getenv("GOOGLE_API_KEY") or st.text_input(
+    "Enter your Google API Key", type="password")
+
+# Validate API key
+if not api_key:
+    st.error(
+        "❌ Google API key is missing! Please set it in your .env or enter it above.")
+    st.stop()
+
+try:
+    genai.configure(api_key=api_key)
+except Exception as e:
+    st.error(f"❌ Failed to configure Gemini API: {e}")
+    st.stop()
 
 # Function to load Gemini Pro Vision model
+
+
 def load_gemini_pro_vision_model():
     """
     Load the Gemini Pro Vision model.
     """
-    model = genai.GenerativeModel("gemini-1.5-flash")  # Updated model name
+    model = genai.GenerativeModel(
+        "gemini-1.5-flash")  # or your preferred version
     return model
 
-# Initialize the Streamlit app
-st.set_page_config(page_title="Image Verification Demo", page_icon="🔮", layout="wide")
-st.header("Gemini Image Verification Application")
 
 # Input fields
 input_txt = st.text_area("Ask a question:", key="input")
-input_img = st.file_uploader("Upload an image:", type=["jpg", "jpeg", "png"], key="image")
+input_img = st.file_uploader("Upload an image:", type=[
+                             "jpg", "jpeg", "png"], key="image")
 
 # If ask button is clicked
 if st.button("Ask"):
