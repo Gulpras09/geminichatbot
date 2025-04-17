@@ -45,6 +45,11 @@ input_txt = st.text_area("Ask a question:", key="input")
 input_img = st.file_uploader("Upload an image:", type=[
                              "jpg", "jpeg", "png"], key="image")
 
+# Display uploaded image
+if input_img is not None:
+    image = Image.open(input_img)
+    st.image(image, caption='Uploaded Image', use_container_width=True)
+
 # If ask button is clicked
 if st.button("Ask"):
     try:
